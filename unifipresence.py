@@ -9,6 +9,8 @@ import requests, requests.utils
 import sys, traceback
 import cookielib
 import datetime
+import time
+# import OpenSSL.SSL # if you get a warning about the encryption being too slow, uncomment this
 
 from ConfigParser import SafeConfigParser
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -17,7 +19,9 @@ config = SafeConfigParser()
 config.read(confFile)
 
 HubitatIP = config.get('DEFAULT', 'HubitatIP').strip("'\" \t")
+CloudAuth = config.get('DEFAULT', 'CloudAuth').strip("'\" \t")
 MakerAPI = config.get('DEFAULT', 'MakerAPI').strip("'\" \t")
+AccessToken = config.get('DEFAULT', 'AccessToken').strip("'\" \t")
 urlUniFiBase = config.get('DEFAULT', 'urlUniFiBase').strip("'\" \t")
 unUniFi = config.get('DEFAULT', 'unUniFi').strip("'\" \t")
 pwUniFi = config.get('DEFAULT', 'pwUniFi').strip("'\" \t")
@@ -66,12 +70,11 @@ def main():
 
 	for clientConfig in config.sections():
 		# print '\nSection:', clientConfig
-		if not (config.has_option(clientConfig, 'DeviceID') and config.has_option(clientConfig, 'AccessToken') and config.has_option(clientConfig, 'macAddr')):
-			print datetime.datetime.now(), clientConfig, "must contain DeviceID, AccessToken, and macAddr"
+		if not (config.has_option(clientConfig, 'DeviceID') and config.has_option(clientConfig, 'macAddr')):
+			print datetime.datetime.now(), clientConfig, "must contain DeviceID and macAddr"
 		else:
 			DeviceID = config.get(clientConfig, 'DeviceID').strip("'\" \t")
 			macAddr = config.get(clientConfig, 'macAddr').strip("'\" \t")
-			AccessToken = config.get(clientConfig, 'AccessToken').strip("'\" \t")
 			lastStatus = getLastStatus(DeviceID)
 			# print 'Client %s\nDeviceID %s\nLast Status %s\nMacAddr %s' % (clientConfig, DeviceID, lastStatus, macAddr)
 			# search clientsUniFi for macAddr
@@ -80,7 +83,7 @@ def main():
 			setLastStatus(DeviceID, currStatus)
 			if not ( lastStatus and currStatus == lastStatus):
 				print datetime.datetime.now(), 'Update Hubitat for ' + clientConfig + ' with status ' + currStatus
-				updateHubitat(HubitatIP, DeviceID, AccessToken, currStatus)
+				updateHubitat(HubitatIP, DeviceID, currStatus)
 	
 	#Defs
 def getLastStatus(DeviceID):
@@ -122,12 +125,15 @@ def macSearch(macAddr, clientsUniFi):
 			return 'Present'
 	return 'Absent'
 
-def updateHubitat(HubitatIP, DeviceID, AccessToken, currStatus):
+def updateHubitat(HubitatIP, DeviceID, currStatus):
 	if currStatus == 'Present':
 		status = 'on'
 	else:
 		status = 'off'
-	url = HubitatIP + "/apps/api/" + MakerAPI + "/devices/" + DeviceID + "/" + status + "?access_token=" + AccessToken
+	if CloudAuth == "":
+		url = HubitatIP + "/apps/api/" + MakerAPI + "/devices/" + DeviceID + "/" + status + "?access_token=" + AccessToken
+	else:
+		url = HubitatIP + "/api/" + CloudAuth + "/apps/" + MakerAPI + "/devices/" + DeviceID + "/" + status + "/?access_token=" + AccessToken
 	# print url
 	try:
 		r = requests.get(url)
