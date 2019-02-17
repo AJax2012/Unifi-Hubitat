@@ -1,16 +1,22 @@
 from datetime import datetime, time
+import time as t
 import os
+import socket
+
 
 # NOTE: this will only work on Linux/Unix or Mac. Not tested for Windows
-# Runs until set time. 
-def is_time_between(begin_time, end_time, check_time=None):
-    # If check time is not given, default to current UTC time
-    check_time = check_time or datetime.utcnow().time()
-    if begin_time < end_time:
-        return check_time >= begin_time and check_time <= end_time
-    else: # crosses midnight
-        return check_time >= begin_time or check_time <= end_time
+# Runs until set t. 
+def main():
+    while is_time_between(time(6,30), time(1,30)):
+        os.system('python unifipresence.py')
+        t.sleep(10)
 
-while is_time_between(time(6,30), time(1,30), datetime._local_timezone):
-    os.system('python unifipresence.py')
-    time.sleep(10)
+def is_time_between(begin_time=None, end_time=None):
+    check_t = datetime.now().time()
+    if begin_time < end_time:
+        return check_t >= begin_time and check_t <= end_time
+    else: # crosses midnight
+        return check_t >= begin_time or check_t <= end_time
+
+if __name__ == '__main__':
+	main()
